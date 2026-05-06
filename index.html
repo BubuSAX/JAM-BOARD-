@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Jam Guide — Sax Alto</title>
+  <meta name="description" content="Guide de jam pour saxophone alto — trouve instantanément ta gamme selon la tonalité annoncée.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Jam Sax">
+  <meta name="theme-color" content="#0a0a0f">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --bg2: #14141c;
+      --bg3: #1c1c28;
+      --bg4: #24243a;
+      --text: #e8e8f0;
+      --text2: #8888a0;
+      --text3: #5c5c74;
+      --border: #2a2a3c;
+      --accent: #4f8cff;
+      --accent2: #3a6fd8;
+      --green: #22c589;
+      --green2: #18a070;
+      --green-bg: rgba(34,197,137,0.12);
+      --green-border: rgba(34,197,137,0.3);
+      --blue-bg: rgba(79,140,255,0.12);
+      --blue-border: rgba(79,140,255,0.3);
+      --orange: #f0a030;
+      --orange-bg: rgba(240,160,48,0.12);
+      --orange-border: rgba(240,160,48,0.3);
+      --red: #f06060;
+      --red-bg: rgba(240,96,96,0.12);
+      --radius: 12px;
+      --radius-sm: 8px;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      padding: calc(var(--safe-top) + 12px) 16px calc(var(--safe-bottom) + 16px);
+      -webkit-font-smoothing: antialiased;
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 2px;
+    }
+    .header { margin-bottom: 20px; }
+    .header-sub {
+      font-size: 13px;
+      color: var(--text2);
+      font-weight: 400;
+    }
+
+    /* Mode toggle */
+    .mode-bar {
+      display: flex;
+      gap: 4px;
+      background: var(--bg2);
+      padding: 3px;
+      border-radius: var(--radius);
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 10px 0;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      border-radius: 9px;
+      background: transparent;
+      color: var(--text3);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .mode-btn.active {
+      background: var(--bg3);
+      color: var(--text);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+
+    /* Step labels */
+    .step {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text2);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 10px;
+    }
+
+    /* Concert key grid */
+    .key-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+      gap: 6px;
+      margin-bottom: 22px;
+    }
+    .kbtn {
+      height: 48px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg2);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+    }
+    .kbtn:active { transform: scale(0.95); }
+    .kbtn.altered { background: var(--bg3); color: var(--text2); }
+    .kbtn.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .kbtn.altered.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    /* Scale grid */
+    .scale-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 24px;
+    }
+    .sbtn {
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg2);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text2);
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .sbtn:active { transform: scale(0.96); }
+    .sbtn .stag { font-size: 11px; font-weight: 400; color: var(--text3); }
+    .sbtn.sel { background: var(--green); border-color: var(--green); color: #fff; }
+    .sbtn.sel .stag { color: rgba(255,255,255,0.7); }
+
+    /* Result card */
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-bottom: 14px;
+      animation: fadeIn 0.25s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    .hero-note {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+      background: linear-gradient(135deg, var(--accent), var(--green));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-sub {
+      font-size: 13px;
+      color: var(--text2);
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    .hero-sub strong { color: var(--text); font-weight: 500; }
+
+    /* Note chips */
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+    .chip {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      min-width: 46px;
+    }
+    .chip-name { font-size: 16px; font-weight: 600; }
+    .chip-role { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+    .chip-root { background: var(--green-bg); border: 1px solid var(--green-border); }
+    .chip-root .chip-name { color: var(--green); }
+    .chip-root .chip-role { color: var(--green2); }
+    .chip-on { background: var(--blue-bg); border: 1px solid var(--blue-border); }
+    .chip-on .chip-name { color: var(--accent); }
+    .chip-on .chip-role { color: var(--accent2); }
+    .chip-blue { background: var(--orange-bg); border: 1px solid var(--orange-border); }
+    .chip-blue .chip-name { color: var(--orange); }
+    .chip-blue .chip-role { color: #c88020; }
+
+    /* Legend */
+    .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+    .leg { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); }
+    .leg-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+    /* Keyboard */
+    .kb-wrap { overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+    .kb-outer {
+      position: relative;
+      height: 100px;
+      min-width: 420px;
+      display: flex;
+      gap: 2px;
+    }
+    .wk {
+      flex: 1;
+      min-width: 28px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 0 0 6px 6px;
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 6px;
+    }
+    .wk.wk-on { background: var(--accent); border-color: var(--accent2); }
+    .wk.wk-root { background: var(--green); border-color: var(--green2); }
+    .wk.wk-blue { background: var(--orange); border-color: #c88020; }
+    .wk-lbl { font-size: 10px; font-weight: 500; color: var(--text3); }
+    .wk.wk-on .wk-lbl,
+    .wk.wk-root .wk-lbl,
+    .wk.wk-blue .wk-lbl { color: #fff; }
+    .bk-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+    .bk {
+      position: absolute;
+      width: 22px;
+      height: 60px;
+      background: #1a1a24;
+      border: 1px solid #333;
+      border-top: none;
+      border-radius: 0 0 4px 4px;
+      z-index: 2;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 5px;
+    }
+    .bk.bk-on { background: var(--accent); border-color: var(--accent2); }
+    .bk.bk-root { background: var(--green); border-color: var(--green2); }
+    .bk.bk-blue { background: var(--orange); border-color: #c88020; }
+    .bk-lbl { font-size: 9px; color: rgba(255,255,255,0.8); font-weight: 500; }
+
+    /* Tip box */
+    .tip {
+      background: var(--bg3);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-size: 13px;
+      color: var(--text2);
+      line-height: 1.6;
+      margin-bottom: 16px;
+      border-left: 3px solid var(--accent);
+    }
+    .tip strong { color: var(--text); font-weight: 500; }
+
+    /* Placeholder */
+    .empty {
+      text-align: center;
+      padding: 48px 0;
+      color: var(--text3);
+      font-size: 14px;
+    }
+    .empty-icon { font-size: 32px; margin-bottom: 8px; display: block; }
+
+    /* Quiz */
+    .score-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--text2);
+      margin-bottom: 16px;
+    }
+    .score-val { font-size: 20px; font-weight: 600; color: var(--text); }
+    .score-bar .reset-btn {
+      margin-left: auto;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg2);
+      color: var(--text2);
+      cursor: pointer;
+    }
+    .quiz-q {
+      font-size: 15px;
+      color: var(--text);
+      font-weight: 500;
+      margin-bottom: 14px;
+      line-height: 1.6;
+    }
+    .quiz-q strong { color: var(--accent); }
+    .quiz-opts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .qopt {
+      padding: 12px 22px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg2);
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.15s;
+      min-width: 64px;
+      text-align: center;
+    }
+    .qopt:active { transform: scale(0.95); }
+    .qopt.correct { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+    .qopt.wrong { background: var(--red-bg); border-color: var(--red); color: var(--red); }
+    .quiz-fb {
+      font-size: 13px;
+      min-height: 20px;
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+    .quiz-next {
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      display: none;
+    }
+    .quiz-next:active { transform: scale(0.96); }
+
+    /* Haptic feedback hint */
+    @media (hover: none) {
+      .kbtn:active, .sbtn:active, .qopt:active { opacity: 0.8; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Jam Guide</h1>
+    <div class="header-sub">Saxophone alto — transposition instantanee</div>
+  </div>
+
+  <div class="mode-bar">
+    <button class="mode-btn active" id="btn-find" onclick="setMode('find')">Trouver ma gamme</button>
+    <button class="mode-btn" id="btn-quiz" onclick="setMode('quiz')">Entrainement</button>
+  </div>
+
+  <div id="panel-find">
+    <div class="step">1 — Tonalite concert (annoncee)</div>
+    <div class="key-grid" id="key-grid"></div>
+    <div class="step">2 — Type de gamme</div>
+    <div class="scale-grid" id="scale-grid"></div>
+    <div id="result-area">
+      <div class="empty">
+        <span class="empty-icon">&#9835;</span>
+        Selectionne une tonalite et une gamme
+      </div>
+    </div>
+  </div>
+
+  <div id="panel-quiz" style="display:none">
+    <div class="score-bar">
+      Score : <span class="score-val" id="score-disp">0 / 0</span>
+      <button class="reset-btn" onclick="resetQuiz()">Reset</button>
+      <button class="reset-btn" onclick="newQuestion()">Suivante</button>
+    </div>
+    <div id="quiz-area"></div>
+  </div>
+
+<script>
+const ALL_KEYS=[
+  {name:'Do',   midi:0, alt:null},
+  {name:'Do#',  midi:1, alt:'Reb'},
+  {name:'Reb',  midi:1, alt:'Do#'},
+  {name:'Re',   midi:2, alt:null},
+  {name:'Re#',  midi:3, alt:'Mib'},
+  {name:'Mib',  midi:3, alt:'Re#'},
+  {name:'Mi',   midi:4, alt:null},
+  {name:'Fa',   midi:5, alt:null},
+  {name:'Fa#',  midi:6, alt:'Solb'},
+  {name:'Solb', midi:6, alt:'Fa#'},
+  {name:'Sol',  midi:7, alt:null},
+  {name:'Sol#', midi:8, alt:'Lab'},
+  {name:'Lab',  midi:8, alt:'Sol#'},
+  {name:'La',   midi:9, alt:null},
+  {name:'La#',  midi:10,alt:'Sib'},
+  {name:'Sib',  midi:10,alt:'La#'},
+  {name:'Si',   midi:11,alt:null},
+];
+
+const ALTERED=new Set([1,3,6,8,10]);
+const NF=['Do','Reb','Re','Mib','Mi','Fa','Solb','Sol','Lab','La','Sib','Si'];
+const NS=['Do','Do#','Re','Re#','Mi','Fa','Fa#','Sol','Sol#','La','La#','Si'];
+
+function nn(midi,sharp){ return (sharp?NS:NF)[((midi%12)+12)%12]; }
+function concertToAlto(m){ return ((m+9)%12+12)%12; }
+function isSharpKey(m){ return [1,2,4,6,7,9,11].includes(m); }
+
+const SCALES={
+  'Penta mineure': {iv:[0,3,5,7,10], blue:null, tag:'Blues / Jazz'},
+  'Blues':         {iv:[0,3,5,6,7,10],blue:6,    tag:'Blues'},
+  'Majeure':       {iv:[0,2,4,5,7,9,11],blue:null,tag:'Jazz majeur'},
+  'Mineure nat.':  {iv:[0,2,3,5,7,8,10],blue:null,tag:'Jazz mineur'},
+  'Penta majeure': {iv:[0,2,4,7,9], blue:null, tag:'Swing / Gospel'},
+  'Dorien':        {iv:[0,2,3,5,7,9,10],blue:null,tag:'Jazz / Funk'},
+  'Mixolydien':    {iv:[0,2,4,5,7,9,10],blue:null,tag:'Blues / Rock'},
+};
+
+const ivRole={0:'tonique',2:'2',3:'b3',4:'3',5:'4',6:'b5',7:'5',8:'b6',9:'6',10:'b7',11:'7'};
+
+let selKey=null, selScale=null;
+let quizScore=0, quizTotal=0, quizAnswered=false;
+
+function buildKeyGrid(){
+  const g=document.getElementById('key-grid');
+  g.innerHTML='';
+  ALL_KEYS.forEach(k=>{
+    const b=document.createElement('button');
+    b.className='kbtn'+(ALTERED.has(k.midi)?' altered':'')+(selKey&&selKey.name===k.name?' sel':'');
+    b.textContent=k.name;
+    b.onclick=()=>{ selKey=k; buildKeyGrid(); buildResult(); };
+    g.appendChild(b);
+  });
+}
+
+function buildScaleGrid(){
+  const g=document.getElementById('scale-grid');
+  g.innerHTML='';
+  Object.entries(SCALES).forEach(([name,sc])=>{
+    const b=document.createElement('button');
+    b.className='sbtn'+(selScale===name?' sel':'');
+    b.innerHTML=name+'<span class="stag">'+sc.tag+'</span>';
+    b.onclick=()=>{ selScale=name; buildScaleGrid(); buildResult(); };
+    g.appendChild(b);
+  });
+}
+
+function buildResult(){
+  const area=document.getElementById('result-area');
+  if(!selKey||!selScale){
+    area.innerHTML='<div class="empty"><span class="empty-icon">&#9835;</span>Selectionne une tonalite et une gamme</div>';
+    return;
+  }
+  const cM=selKey.midi;
+  const aM=concertToAlto(cM);
+  const sh=isSharpKey(aM);
+  const aName=nn(aM,sh);
+  const sc=SCALES[selScale];
+  const notes=sc.iv.map(iv=>({name:nn((aM+iv)%12,sh),iv}));
+
+  let h=`<div class="card">
+    <div class="hero-note">Joue en ${aName}</div>
+    <div class="hero-sub">Groupe en <strong>${selKey.name}</strong> &rarr; toi en <strong>${aName}</strong> sur le sax alto</div>
+    <div class="chips">`;
+  notes.forEach(n=>{
+    const root=n.iv===0, blue=sc.blue!==null&&n.iv===sc.blue;
+    const cls=root?'chip-root':blue?'chip-blue':'chip-on';
+    const role=root?'tonique':blue?'blue note':(ivRole[n.iv]||'');
+    h+=`<div class="chip ${cls}"><div class="chip-name">${n.name}</div><div class="chip-role">${role}</div></div>`;
+  });
+  h+=`</div>
+    <div class="legend">
+      <div class="leg"><div class="leg-dot" style="background:var(--green)"></div>Tonique</div>
+      <div class="leg"><div class="leg-dot" style="background:var(--accent)"></div>Notes</div>
+      ${sc.blue!==null?'<div class="leg"><div class="leg-dot" style="background:var(--orange)"></div>Blue note</div>':''}
+    </div>
+    <div class="kb-wrap"><div class="kb-outer" id="kb-inner"></div></div>
+  </div>`;
+
+  const tips={
+    'Penta mineure':'<strong>Tip :</strong> Les 5 notes sonnent toujours bien. Improvise librement sans fausse note.',
+    'Blues':'<strong>Tip :</strong> Passe vite sur la blue note (b5) ou tiens-la pour la tension blues typique.',
+    'Majeure':'<strong>Tip :</strong> Sonne bien sur les accords maj7. Commence et finis tes phrases sur la tonique.',
+    'Mineure nat.':'<strong>Tip :</strong> Insiste sur la b3 et la b7 pour un son jazz mineur profond.',
+    'Penta majeure':'<strong>Tip :</strong> Plus lumineuse. Parfaite sur un blues rapide ou un standard swing.',
+    'Dorien':'<strong>Tip :</strong> Le mode jazz par excellence. La 6te majeure la distingue de la mineure naturelle.',
+    'Mixolydien':'<strong>Tip :</strong> Majeure avec b7. Ideal sur les accords de dominante (7).',
+  };
+  h+=`<div class="tip">${tips[selScale]||''}</div>`;
+  area.innerHTML=h;
+  requestAnimationFrame(()=>drawKb(aM,sc,sh));
+}
+
+function drawKb(root,sc,sh){
+  const kb=document.getElementById('kb-inner');
+  if(!kb) return;
+  kb.innerHTML='';
+  const wOrder=[0,2,4,5,7,9,11];
+  const bMap={1:0,3:1,6:3,8:4,10:5};
+  const ivSet=new Set(sc.iv);
+  const whites=[];
+  for(let o=0;o<2;o++) wOrder.forEach(w=>whites.push(o*12+w));
+  whites.forEach(abs=>{
+    const semi=((abs-root)%12+12)%12;
+    const isRoot=semi===0, isBlue=sc.blue!==null&&semi===sc.blue, isOn=ivSet.has(semi);
+    const d=document.createElement('div');
+    d.className='wk'+(isRoot?' wk-root':isBlue?' wk-blue':isOn?' wk-on':'');
+    const lbl=document.createElement('div');
+    lbl.className='wk-lbl';
+    lbl.textContent=(isOn||isRoot)?nn(abs%12,sh):'';
+    d.appendChild(lbl);
+    kb.appendChild(d);
+  });
+  const bLayer=document.createElement('div');
+  bLayer.className='bk-layer';
+  const totalW=kb.offsetWidth||440;
+  const wW=totalW/whites.length;
+  for(let o=0;o<2;o++){
+    Object.entries(bMap).forEach(([bs,wi])=>{
+      const abs=o*12+parseInt(bs);
+      const semi=((abs-root)%12+12)%12;
+      const isRoot=semi===0, isBlue=sc.blue!==null&&semi===sc.blue, isOn=ivSet.has(semi);
+      const wIdx=whites.indexOf(o*12+wOrder[parseInt(wi)]);
+      if(wIdx<0)return;
+      const bk=document.createElement('div');
+      bk.className='bk'+(isRoot?' bk-root':isBlue?' bk-blue':isOn?' bk-on':'');
+      bk.style.left=((wIdx+0.62)*wW)+'px';
+      const lbl=document.createElement('div');
+      lbl.className='bk-lbl';
+      lbl.textContent=(isOn||isRoot)?nn(abs%12,sh):'';
+      bk.appendChild(lbl);
+      bLayer.appendChild(bk);
+    });
+  }
+  kb.appendChild(bLayer);
+}
+
+function setMode(m){
+  document.getElementById('panel-find').style.display=m==='find'?'':'none';
+  document.getElementById('panel-quiz').style.display=m==='quiz'?'':'none';
+  document.getElementById('btn-find').classList.toggle('active',m==='find');
+  document.getElementById('btn-quiz').classList.toggle('active',m==='quiz');
+  if(m==='quiz'&&quizTotal===0) newQuestion();
+}
+
+function resetQuiz(){
+  quizScore=0; quizTotal=0;
+  document.getElementById('score-disp').textContent='0 / 0';
+  newQuestion();
+}
+
+const QUIZ_SCALES=['Penta mineure','Blues','Majeure','Mineure nat.','Dorien','Mixolydien'];
+function newQuestion(){
+  quizAnswered=false;
+  const ck=ALL_KEYS[Math.floor(Math.random()*ALL_KEYS.length)];
+  const aM=concertToAlto(ck.midi);
+  const sh=isSharpKey(aM);
+  const correct=nn(aM,sh);
+  const scaleName=QUIZ_SCALES[Math.floor(Math.random()*QUIZ_SCALES.length)];
+  const sc=SCALES[scaleName];
+  const notesList=sc.iv.map(iv=>nn((aM+iv)%12,sh)).join(' — ');
+
+  const wrongs=[];
+  while(wrongs.length<3){
+    const r=Math.floor(Math.random()*12);
+    if(r!==aM&&!wrongs.includes(r)) wrongs.push(r);
+  }
+  const opts=[{midi:aM,name:correct},...wrongs.map(m=>({midi:m,name:nn(m,isSharpKey(m))}))].sort(()=>Math.random()-0.5);
+
+  document.getElementById('quiz-area').innerHTML=`
+    <div class="card">
+      <div class="quiz-q">Le groupe joue en <strong>${ck.name}</strong> — gamme <strong>${scaleName}</strong>.<br>Dans quelle tonalite tu joues sur ton sax alto ?</div>
+      <div class="quiz-opts">${opts.map(o=>`<button class="qopt" data-midi="${o.midi}" onclick="checkAnswer(${o.midi},${aM},'${notesList.replace(/'/g,"\\'")}')">${o.name}</button>`).join('')}</div>
+      <div class="quiz-fb" id="quiz-fb"></div>
+      <button class="quiz-next" id="quiz-next" onclick="newQuestion()">Question suivante</button>
+    </div>`;
+}
+
+function checkAnswer(chosen,correct,notesList){
+  if(quizAnswered) return;
+  quizAnswered=true;
+  quizTotal++;
+  const ok=chosen===correct;
+  if(ok) quizScore++;
+  document.getElementById('score-disp').textContent=quizScore+' / '+quizTotal;
+  document.querySelectorAll('.qopt').forEach(b=>{
+    const v=parseInt(b.dataset.midi);
+    if(v===correct) b.classList.add('correct');
+    else if(v===chosen&&!ok) b.classList.add('wrong');
+    b.style.pointerEvents='none';
+  });
+  const fb=document.getElementById('quiz-fb');
+  fb.style.color=ok?'var(--green)':'var(--red)';
+  fb.textContent=ok?'Correct ! Notes : '+notesList:'Rate — la bonne reponse donne : '+notesList;
+  document.getElementById('quiz-next').style.display='inline-block';
+}
+
+buildKeyGrid();
+buildScaleGrid();
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
